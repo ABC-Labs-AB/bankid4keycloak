@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Enumeration;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -15,10 +16,13 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import javax.xml.ws.Response;
 
-import org.jboss.logging.Logger;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+
 import org.keycloak.broker.bankid.client.BankidClientException;
 import org.keycloak.broker.bankid.client.SimpleBankidClient;
 import org.keycloak.broker.bankid.model.AuthResponse;
@@ -30,11 +34,6 @@ import org.keycloak.broker.provider.IdentityProvider.AuthenticationCallback;
 import org.keycloak.forms.login.LoginFormsProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.sessions.AuthenticationSessionModel;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 
 public class BankidEndpoint {
 
@@ -213,7 +212,13 @@ public class BankidEndpoint {
 		}
 		// Make sure to remove the authresponse attribute from the session
 		clearAllBankidFromSession(request.getSession());
-		return callback.error("bankid.hints." + BankidHintCodes.cancelled.messageShortName);
+		System.out.println(request.getSession());
+		// return callback.error("bankid.hints." +
+		// BankidHintCodes.cancelled.messageShortName);
+		LoginFormsProvider loginFormsProvider = provider.getSession().getProvider(LoginFormsProvider.class);
+		return loginFormsProvider.setError("bankid.hints." +
+				BankidHintCodes.userCancel.messageShortName)
+				.createErrorPage(Status.INTERNAL_SERVER_ERROR);
 	}
 
 	@GET
